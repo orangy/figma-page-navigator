@@ -1,0 +1,7 @@
+{
+  "name": "Switch Page",
+  "id": "821090516075187800",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html"
+}
