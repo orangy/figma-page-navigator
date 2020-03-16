@@ -13,6 +13,9 @@ onmessage = (event) => {
         case "goto-frame":
             caption.innerText = "Go to Frame"
             break;
+        default:
+            caption.innerText = "Unrecognized command!"
+            break;
     }
 
     if (pluginMessage.type == 'load') {

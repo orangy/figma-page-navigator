@@ -1,14 +1,20 @@
 figma.showUI(__html__, {width: 400, height: 250});
 
-console.log(figma.command)
-
 setTimeout(() => {
-    const result = figma.command == "goto-page" ?
-        figma.root.children
-            .map(page => ({name: page.name, id: page.id})) :
-        figma.currentPage.children
-            .filter(child => child.type === "FRAME")
-            .map(page => ({name: page.name, id: page.id}));
+    let result: { name: string; id: string }[];
+    switch (figma.command) {
+        case "goto-page":
+            result = figma.root.children
+                .map(page => ({name: page.name, id: page.id}));
+            break;
+        case "goto-frame":
+            result = figma.currentPage.children
+                .filter(child => child.type === "FRAME")
+                .map(page => ({name: page.name, id: page.id}));
+            break;
+        default:
+            result = [];
+    }
 
     figma.ui.postMessage({type: 'load', command: figma.command, items: result})
 });
