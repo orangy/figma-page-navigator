@@ -3,7 +3,7 @@
   "id": "821090516075187800",
   "api": "1.0.0",
   "main": "dist/code.js",
-  "ui": "dist/ui.h§tml",
+  "ui": "dist/ui.html",
   "menu": [
     {
       "name": "Go to Page",
