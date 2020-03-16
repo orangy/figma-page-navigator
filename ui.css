@@ -153,7 +153,7 @@ ul {
     padding: 0;
     list-style: none;
     width: 100%;
-    height: calc(100% - 44px);
+    height: calc(100% - 96px);
     overflow: scroll;
 }
 
@@ -174,14 +174,14 @@ li * {
 
 li:hover {
     cursor: pointer;
+    /*background-color: #daebf7;*/
+}
+
+.active {
     background-color: #daebf7;
 }
 
-li.active {
-    background-color: #daebf7;
-}
-
-li.hidden {
+.hidden {
     display: none;
 }
 

@@ -2,35 +2,64 @@ import './ui.css'
 
 const list = document.getElementById("list")
 const caption = document.getElementById("caption")
+const loadingMessage = document.getElementById("loading-message")
+const search = <HTMLInputElement>document.getElementById("search");
+
+search.focus()
+
+setTimeout(() => {
+    const loader = document.getElementById("loader")
+    if (loader)
+        loader.style.display = "block"
+}, 200)
 
 onmessage = (event) => {
     const pluginMessage = event.data.pluginMessage
 
-    switch (pluginMessage.command) {
-        case "goto-page":
+    switch (pluginMessage.type) {
+        case "init-page":
             caption.innerText = "Go to Page"
+            loadingMessage.innerText = "Loading pages…"
+            if (pluginMessage.filter) {
+                search.value = pluginMessage.filter;
+                search.setSelectionRange(0, search.value.length)
+            }
             break;
-        case "goto-frame":
+        case "init-frame":
             caption.innerText = "Go to Frame"
+            loadingMessage.innerText = "Loading frames…"
+            if (pluginMessage.filter) {
+                search.value = pluginMessage.filter;
+                search.setSelectionRange(0, search.value.length)
+            }
+            break;
+        case "load":
+            const filter = search.value.toUpperCase().trim();
+            const lastActive = pluginMessage.active;
+            let activeSet = !!lastActive;
+            let contents = ""
+            pluginMessage.items.forEach((item: any) => {
+                const visibility = filter.length == 0 || item.name.toUpperCase().indexOf(filter) >= 0 ? "block" : "none";
+                let activeness = ""
+                if ((!activeSet && visibility == 'block') || (lastActive === item.id)) {
+                    activeSet = true;
+                    activeness = "active"
+                }
+
+                contents += `<li data-id="${(item.id)}" class="${activeness}" style="display: ${visibility}"><a href="#"><div class="name">${(item.name)}</div></a></li>`;
+            })
+            list.innerHTML = contents;
+            const found = findActive();
+            if (found)
+                found.element.scrollIntoView({behavior: "auto", block: "center", inline: "start"});
+
+            setTimeout(() => startListening(), 100)
             break;
         default:
             caption.innerText = "Unrecognized command!"
             break;
     }
-
-    if (pluginMessage.type == 'load') {
-        document.getElementById("loader").remove()
-        pluginMessage.items.forEach((page: any, index: number) => {
-            const activeness = index === 0 ? "active" : "";
-            let newItem = `<li data-id="${(page.id)}" class="${activeness}"><a href="#"><div class="name">${(page.name)} </div></a></li>`
-            list.innerHTML += newItem;
-        })
-
-        setTimeout(() => startListening(), 100)
-    }
 }
-
-document.getElementById("search").focus()
 
 document.addEventListener('keydown', event => {
     if (event.isComposing) return; // do not filter before IME finishes
@@ -42,13 +71,13 @@ document.addEventListener('keydown', event => {
 
     switch (event.code) {
         case "Escape":
-            parent.postMessage({pluginMessage: {type: 'cancel'}}, '*')
+            parent.postMessage({pluginMessage: {type: 'cancel', filter: search.value}}, '*')
             return;
         case "ArrowDown": {
             let first = null;
             for (let i = 0; i < items.length; i++) {
                 let element = items[i];
-                if (element.classList.contains("hidden"))
+                if (element.style.display == "none")
                     continue; // ignore hidden
 
                 if (first == null)
@@ -80,7 +109,7 @@ document.addEventListener('keydown', event => {
             let previous = null;
             for (let i = 0; i < items.length; i++) {
                 let element = items[i];
-                if (element.classList.contains("hidden"))
+                if (element.style.display == "none")
                     continue; // ignore hidden
 
                 if (element.classList.contains("active")) {
@@ -106,13 +135,9 @@ document.addEventListener('keydown', event => {
             break;
         }
         case "Enter":
-            for (let i = 0; i < items.length; i++) {
-                let element = items[i];
-                if (element.classList.contains("active")) {
-                    const id = element.attributes.getNamedItem("data-id").value;
-                    parent.postMessage({pluginMessage: {type: 'navigate', id: id}}, '*')
-                }
-            }
+            const found = findActive();
+            if (found)
+                parent.postMessage({pluginMessage: {type: 'navigate', id: found.id, filter: search.value}}, '*')
             handled = true;
             break;
     }
@@ -129,12 +154,21 @@ document.addEventListener('keydown', event => {
     }
 })
 
-document.addEventListener('keyup', event => {
-    if (event.isComposing) return; // do not filter before IME finishes
+function findActive() {
     const items = list.getElementsByTagName("li");
+    for (let i = 0; i < items.length; i++) {
+        let element = items[i];
+        if (element.classList.contains("active")) {
+            const id = element.attributes.getNamedItem("data-id").value;
+            return {id: id, element: element}
+        }
+    }
+    return {}
+}
 
-    const input: any = document.getElementById("search");
-    const filter: any = input.value.toUpperCase();
+function filterItems() {
+    const items = list.getElementsByTagName("li");
+    const filter = search.value.toUpperCase().trim();
     let active = null;
     let firstVisible = null
     let a: any, txtValue: any;
@@ -143,7 +177,7 @@ document.addEventListener('keyup', event => {
         a = element.getElementsByTagName("a")[0];
         txtValue = a.textContent || a.innerText;
         if (txtValue.toUpperCase().indexOf(filter) > -1) {
-            element.classList.remove("hidden")
+            element.style.display = "block"
             if (firstVisible === null) {
                 firstVisible = element;
             }
@@ -151,7 +185,7 @@ document.addEventListener('keyup', event => {
                 active = element;
         } else {
             element.classList.remove("active")
-            element.classList.add("hidden")
+            element.style.display = "none"
         }
     }
     if (active === null && firstVisible !== null) {
@@ -161,12 +195,17 @@ document.addEventListener('keyup', event => {
         active.scrollIntoView({behavior: "auto", block: "nearest", inline: "start"});
         active.classList.add("active")
     }
+}
+
+document.addEventListener('keyup', event => {
+    if (event.isComposing) return; // do not filter before IME finishes
+    filterItems();
 })
 
 function startListening() {
     list.addEventListener('click', function (e) {
         const target = <HTMLElement>e.target;
         const id = String(target.getAttribute('data-id'));
-        parent.postMessage({pluginMessage: {type: 'navigate', id: id}}, '*')
+        parent.postMessage({pluginMessage: {type: 'navigate', id: id, filter: search.value}}, '*')
     })
 }
