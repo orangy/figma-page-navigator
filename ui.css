@@ -39,6 +39,13 @@ body {
     font-family: Inter, Roboto, sans-serif;
 }
 
+h2 {
+    font-family: "Inter", sans-serif;
+    font-weight: 400;
+    font-size: 20px;
+    margin: 12px;
+}
+
 .input {
     font-family: "Inter", sans-serif;
     font-weight: 400;
@@ -53,9 +60,9 @@ body {
     -webkit-box-align: center;
     -ms-flex-align: center;
     align-items: center;
-    width: 100%;
+    width: calc(100% - 24px);
     height: 30px;
-    margin: 8px 0 8px 0;
+    margin: 12px;
     padding: 8px 4px 8px 7px;
     color: rgba(0, 0, 0, 0.8);
     border: 1px solid transparent;
@@ -141,7 +148,7 @@ ul {
     font-size: 11px;
     line-height: 16px;
     letter-spacing: 0.005em;
-    
+
     margin: 0;
     padding: 0;
     list-style: none;

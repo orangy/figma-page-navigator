@@ -1,24 +1,29 @@
 import './ui.css'
 
-const pagesRoot = document.getElementById("pages")
+const list = document.getElementById("list")
+const caption = document.getElementById("caption")
 
 onmessage = (event) => {
     const pluginMessage = event.data.pluginMessage
 
-    if (pluginMessage.type == 'loadPages') {
+    switch (pluginMessage.command) {
+        case "goto-page":
+            caption.innerText = "Go to Page"
+            break;
+        case "goto-frame":
+            caption.innerText = "Go to Frame"
+            break;
+    }
+
+    if (pluginMessage.type == 'load') {
         document.getElementById("loader").remove()
-        let pages = pluginMessage.pages;
-        let counter = pages.length
-        pages.forEach((page: any, index: number) => {
-            let name = page.name
-            let pageId = page.id
+        pluginMessage.items.forEach((page: any, index: number) => {
             const activeness = index === 0 ? "active" : "";
-            let newItem = `<li data-id="${pageId}" class="page-item ${activeness}"><a href="#"><div class="name">${name} </div></a></li>`
-            pagesRoot.innerHTML += newItem;
+            let newItem = `<li data-id="${(page.id)}" class="${activeness}"><a href="#"><div class="name">${(page.name)} </div></a></li>`
+            list.innerHTML += newItem;
         })
-        setTimeout(function () {
-            startListening()
-        }, 100)
+
+        setTimeout(() => startListening(), 100)
     }
 }
 
@@ -26,8 +31,8 @@ document.getElementById("search").focus()
 
 document.addEventListener('keydown', event => {
     if (event.isComposing) return; // do not filter before IME finishes
-    let container = document.getElementById("pages");
-    let items = container.getElementsByTagName("li");
+
+    const items = list.getElementsByTagName("li");
 
     let active = null;
     let handled = false;
@@ -101,8 +106,8 @@ document.addEventListener('keydown', event => {
             for (let i = 0; i < items.length; i++) {
                 let element = items[i];
                 if (element.classList.contains("active")) {
-                    let pageId = element.attributes.getNamedItem("data-id").value;
-                    parent.postMessage({pluginMessage: {type: 'select-page', pageId: pageId}}, '*')
+                    const id = element.attributes.getNamedItem("data-id").value;
+                    parent.postMessage({pluginMessage: {type: 'navigate', id: id}}, '*')
                 }
             }
             handled = true;
@@ -123,15 +128,13 @@ document.addEventListener('keydown', event => {
 
 document.addEventListener('keyup', event => {
     if (event.isComposing) return; // do not filter before IME finishes
-    let container = document.getElementById("pages");
-    let items = container.getElementsByTagName("li");
+    const items = list.getElementsByTagName("li");
 
-    let input: any, filter: any, a: any, txtValue: any;
-    input = document.getElementById("search");
-    filter = input.value.toUpperCase();
-
+    const input: any = document.getElementById("search");
+    const filter: any = input.value.toUpperCase();
     let active = null;
     let firstVisible = null
+    let a: any, txtValue: any;
     for (let i = 0; i < items.length; i++) {
         let element = items[i];
         a = element.getElementsByTagName("a")[0];
@@ -158,9 +161,9 @@ document.addEventListener('keyup', event => {
 })
 
 function startListening() {
-    document.getElementById("pages").addEventListener('click', function (e) {
-        let target = <HTMLElement>e.target
-        let pageId = String(target.getAttribute('data-id'))
-        parent.postMessage({pluginMessage: {type: 'select-page', pageId: pageId}}, '*')
+    list.addEventListener('click', function (e) {
+        const target = <HTMLElement>e.target;
+        const id = String(target.getAttribute('data-id'));
+        parent.postMessage({pluginMessage: {type: 'navigate', id: id}}, '*')
     })
 }
